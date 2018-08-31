@@ -7,6 +7,9 @@
 //
 
 import UIKit
+import Firebase
+import FirebaseMessaging
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,7 +19,70 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options:[.badge, .alert, .sound]) { (granted, error) in
+            // Enable or disable features based on authorization.
+        }
+        application.registerForRemoteNotifications()
+        FIRApp.configure()
+
+        NotificationCenter.default.addObserver(self,selector: #selector(tokenRefreshNotification(notification:)),
+                                                         name: NSNotification.Name.firInstanceIDTokenRefresh,
+                                                         object: nil)
+        
+        let storyboard:UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
+        let viewController:UIViewController!
+        
+        let user = FIRAuth.auth()?.currentUser?.uid
+        
+        if user != nil {
+            let tabBarController = storyboard.instantiateViewController(withIdentifier: "TabBarController") as!  UITabBarController
+            window?.rootViewController = tabBarController
+            self.window?.makeKeyAndVisible()
+            
+        }else{
+            viewController = storyboard.instantiateViewController(withIdentifier: "LoginVC")
+            let nvc: UINavigationController = UINavigationController(rootViewController: viewController)
+            self.window?.rootViewController = nvc
+            self.window?.makeKeyAndVisible()
+        }
+        
         return true
+    }
+    
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        
+        print("user info = \(userInfo)")
+
+    }
+    
+    public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        
+        FIRInstanceID.instanceID().setAPNSToken(deviceToken, type: FIRInstanceIDAPNSTokenType.unknown)
+        
+    }
+    
+    func tokenRefreshNotification(notification: NSNotification) {
+        // NOTE: It can be nil here
+        let refreshedToken = FIRInstanceID.instanceID().token()
+        print("InstanceID token: \(refreshedToken)")
+                
+        connectToFcm()
+    }
+    
+    func connectToFcm() {
+        FIRMessaging.messaging().connect { (error) in
+            if (error != nil) {
+                print("Unable to connect with FCM. \(error)")
+            } else {
+                print("Connected to FCM.")
+            }
+        }
+    }
+    
+    @nonobjc public func application(application: UIApplication, didReceiveRemoteNotification userInfo: [NSObject : AnyObject]) {
+        print("user info = \(userInfo)")
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
