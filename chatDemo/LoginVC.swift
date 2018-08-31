@@ -16,8 +16,8 @@ class LoginVC: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        self.txtEmail.text! = "juber.patino@sundevs.com"
-        self.txtPassword.text! = "1234567890"
+//        self.txtEmail.text! = "juber.patino@sundevs.com"
+//        self.txtPassword.text! = "1234567890"
         // Do any additional setup after loading the view.
     }
 
